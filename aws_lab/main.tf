@@ -14,7 +14,7 @@ data "aws_ami" "aws-linux" {
 
   filter {
     name   = "name"
-    values = ["amzn-ami-hvm*"]
+    values = ["amzn2-ami-hvm*"]
   }
 
   filter {
@@ -33,6 +33,7 @@ data "aws_ami" "aws-linux" {
 resource "aws_vpc" "lz_vpc" {
     cidr_block = var.lz_vpc
     enable_dns_hostnames = "true"
+    assign_generated_ipv6_cidr_block = true
     tags = {
       "Name" = "Landing Zone"
     }
@@ -40,6 +41,7 @@ resource "aws_vpc" "lz_vpc" {
 resource "aws_vpc" "az_vpc" {
     cidr_block = var.az_vpc
     enable_dns_hostnames = "true"
+    assign_generated_ipv6_cidr_block = true
     tags = {
       "Name" = "Application Zone"
     }
@@ -47,6 +49,7 @@ resource "aws_vpc" "az_vpc" {
 resource "aws_vpc" "bz_vpc" {
     cidr_block = var.bz_vpc
     enable_dns_hostnames = "true"
+    assign_generated_ipv6_cidr_block = true
     tags = {
       "Name" = "Backend Zone"
     }
@@ -114,6 +117,8 @@ resource "aws_subnet" "bz_1" {
     cidr_block = cidrsubnet(var.bz_vpc,3,0)
     vpc_id = aws_vpc.bz_vpc.id
     map_public_ip_on_launch = "false"
+    assign_ipv6_address_on_creation = "true"
+    ipv6_cidr_block = cidrsubnet(aws_vpc.bz_vpc.ipv6_cidr_block, 8, 0)
     availability_zone = data.aws_availability_zones.available.names[0]
     tags = {
       "Name" = "BZ-1"
@@ -123,6 +128,8 @@ resource "aws_subnet" "bz_2" {
     cidr_block = cidrsubnet(var.bz_vpc,3,1)
     vpc_id = aws_vpc.bz_vpc.id
     map_public_ip_on_launch = "false"
+    assign_ipv6_address_on_creation = "true"
+    ipv6_cidr_block = cidrsubnet(aws_vpc.bz_vpc.ipv6_cidr_block, 8, 1)
     availability_zone = data.aws_availability_zones.available.names[1]
     tags = {
       "Name" = "BZ-2"
@@ -132,6 +139,8 @@ resource "aws_subnet" "bz_3" {
     cidr_block = cidrsubnet(var.bz_vpc,3,2)
     vpc_id = aws_vpc.bz_vpc.id
     map_public_ip_on_launch = "false"
+    assign_ipv6_address_on_creation = "true"
+    ipv6_cidr_block = cidrsubnet(aws_vpc.bz_vpc.ipv6_cidr_block, 8, 2)
     availability_zone = data.aws_availability_zones.available.names[2]
     tags = {
       "Name" = "BZ-3"
@@ -147,6 +156,10 @@ resource "aws_internet_gateway" "lz_gateway" {
 
 resource "aws_internet_gateway" "az_gateway" {
   vpc_id = aws_vpc.az_vpc.id
+}
+
+resource "aws_egress_only_internet_gateway" "bz_gateway" {
+  vpc_id = aws_vpc.bz_vpc.id
 }
 
 // VPC peering
@@ -191,7 +204,15 @@ resource "aws_vpc_peering_connection" "lz_az" {
 resource "aws_route_table" "bz_routes" {
     vpc_id = aws_vpc.bz_vpc.id
     route {
-        cidr_block = "0.0.0.0/0"
+        ipv6_cidr_block = "::/0"
+        egress_only_gateway_id = aws_egress_only_internet_gateway.bz_gateway.id
+    }
+    route {
+        cidr_block = var.az_vpc
+        vpc_peering_connection_id = aws_vpc_peering_connection.az_bz.id
+    }
+    route {
+        cidr_block = var.lz_vpc
         vpc_peering_connection_id = aws_vpc_peering_connection.az_bz.id
     }
 }
@@ -214,9 +235,11 @@ resource "aws_route_table" "az_routes" {
     vpc_id = aws_vpc.az_vpc.id
     route {
         cidr_block = "0.0.0.0/0"
-        //Requires a transit gateway instead
-        //vpc_peering_connection_id = aws_vpc_peering_connection.lz_az.id
         gateway_id = aws_internet_gateway.az_gateway.id
+    }
+    route {
+        cidr_block = var.lz_vpc
+        vpc_peering_connection_id = aws_vpc_peering_connection.lz_az.id
     }
     route {
         cidr_block = var.bz_vpc

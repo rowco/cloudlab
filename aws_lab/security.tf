@@ -9,7 +9,7 @@ resource "aws_security_group" "sg-app-default" {
     from_port = 80
     to_port = 80
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.100.0.0/16"]
   }
 
   ingress {
@@ -44,7 +44,7 @@ resource "aws_security_group" "sg-backend-default" {
     from_port = 80
     to_port = 80
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.100.0.0/16"]
   }
 
   ingress {
@@ -67,6 +67,14 @@ resource "aws_security_group" "sg-backend-default" {
     protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
 }
 
 
@@ -75,12 +83,12 @@ resource "aws_security_group" "sg-landing-default" {
   name = "landing-default"
   vpc_id = aws_vpc.lz_vpc.id
 
-  ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+#   ingress {
+#     from_port = 80
+#     to_port = 80
+#     protocol = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
 
   ingress {
     from_port = 22
@@ -102,4 +110,5 @@ resource "aws_security_group" "sg-landing-default" {
     protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
 }
