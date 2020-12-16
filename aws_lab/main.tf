@@ -57,93 +57,40 @@ resource "aws_vpc" "bz_vpc" {
 
 // Subnet Provisioning
 // LZ
-resource "aws_subnet" "lz_1" {
-    cidr_block = cidrsubnet(var.lz_vpc,3,0)
+resource "aws_subnet" "lz" {
+    count = 3
+    cidr_block = cidrsubnet(var.lz_vpc,3,count.index)
     vpc_id = aws_vpc.lz_vpc.id
     map_public_ip_on_launch = "true"
-    availability_zone = data.aws_availability_zones.available.names[0]
+    availability_zone = data.aws_availability_zones.available.names[count.index]
     tags = {
-      "Name" = "LZ-1"
+      "Name" = "LZ-${count.index + 1}"
     }
 }
-resource "aws_subnet" "lz_2" {
-    cidr_block = cidrsubnet(var.lz_vpc,3,1)
-    vpc_id = aws_vpc.lz_vpc.id
-    map_public_ip_on_launch = "true"
-    availability_zone = data.aws_availability_zones.available.names[1]
-    tags = {
-      "Name" = "LZ-2"
-    }
-}
-resource "aws_subnet" "lz_3" {
-    cidr_block = cidrsubnet(var.lz_vpc,3,2)
-    vpc_id = aws_vpc.lz_vpc.id
-    map_public_ip_on_launch = "true"
-    availability_zone = data.aws_availability_zones.available.names[2]
-    tags = {
-      "Name" = "LZ-3"
-    }
-}
+
 // AZ
-resource "aws_subnet" "az_1" {
-    cidr_block = cidrsubnet(var.az_vpc,3,0)
+resource "aws_subnet" "az" {
+    count = 3
+    cidr_block = cidrsubnet(var.az_vpc,3,count.index)
     vpc_id = aws_vpc.az_vpc.id
     map_public_ip_on_launch = "true"
-    availability_zone = data.aws_availability_zones.available.names[0]
+    availability_zone = data.aws_availability_zones.available.names[count.index]
     tags = {
-      "Name" = "AZ-1"
+      "Name" = "AZ-${count.index + 1}"
     }
 }
-resource "aws_subnet" "az_2" {
-    cidr_block = cidrsubnet(var.az_vpc,3,1)
-    vpc_id = aws_vpc.az_vpc.id
-    map_public_ip_on_launch = "true"
-    availability_zone = data.aws_availability_zones.available.names[1]
-    tags = {
-      "Name" = "AZ-2"
-    }
-}
-resource "aws_subnet" "az_3" {
-    cidr_block = cidrsubnet(var.az_vpc,3,2)
-    vpc_id = aws_vpc.az_vpc.id
-    map_public_ip_on_launch = "true"
-    availability_zone = data.aws_availability_zones.available.names[2]
-    tags = {
-      "Name" = "AZ-3"
-    }
-}
+
 // BZ
-resource "aws_subnet" "bz_1" {
-    cidr_block = cidrsubnet(var.bz_vpc,3,0)
+resource "aws_subnet" "bz" {
+    count = 3
+    cidr_block = cidrsubnet(var.bz_vpc,3,count.index)
     vpc_id = aws_vpc.bz_vpc.id
     map_public_ip_on_launch = "false"
     assign_ipv6_address_on_creation = "true"
-    ipv6_cidr_block = cidrsubnet(aws_vpc.bz_vpc.ipv6_cidr_block, 8, 0)
-    availability_zone = data.aws_availability_zones.available.names[0]
+    ipv6_cidr_block = cidrsubnet(aws_vpc.bz_vpc.ipv6_cidr_block, 8, count.index)
+    availability_zone = data.aws_availability_zones.available.names[count.index]
     tags = {
-      "Name" = "BZ-1"
-    }
-}
-resource "aws_subnet" "bz_2" {
-    cidr_block = cidrsubnet(var.bz_vpc,3,1)
-    vpc_id = aws_vpc.bz_vpc.id
-    map_public_ip_on_launch = "false"
-    assign_ipv6_address_on_creation = "true"
-    ipv6_cidr_block = cidrsubnet(aws_vpc.bz_vpc.ipv6_cidr_block, 8, 1)
-    availability_zone = data.aws_availability_zones.available.names[1]
-    tags = {
-      "Name" = "BZ-2"
-    }
-}
-resource "aws_subnet" "bz_3" {
-    cidr_block = cidrsubnet(var.bz_vpc,3,2)
-    vpc_id = aws_vpc.bz_vpc.id
-    map_public_ip_on_launch = "false"
-    assign_ipv6_address_on_creation = "true"
-    ipv6_cidr_block = cidrsubnet(aws_vpc.bz_vpc.ipv6_cidr_block, 8, 2)
-    availability_zone = data.aws_availability_zones.available.names[2]
-    tags = {
-      "Name" = "BZ-3"
+      "Name" = "BZ-${count.index + 1}"
     }
 }
 
@@ -217,16 +164,9 @@ resource "aws_route_table" "bz_routes" {
     }
 }
 
-resource "aws_route_table_association" "bz_1_routes" {
-    subnet_id = aws_subnet.bz_1.id
-    route_table_id = aws_route_table.bz_routes.id
-}
-resource "aws_route_table_association" "bz_2_routes" {
-    subnet_id = aws_subnet.bz_2.id
-    route_table_id = aws_route_table.bz_routes.id
-}
-resource "aws_route_table_association" "bz_3_routes" {
-    subnet_id = aws_subnet.bz_3.id
+resource "aws_route_table_association" "bz_routes" {
+    count = 3
+    subnet_id = aws_subnet.bz[count.index].id
     route_table_id = aws_route_table.bz_routes.id
 }
 
@@ -247,19 +187,11 @@ resource "aws_route_table" "az_routes" {
     }
 }
 
-resource "aws_route_table_association" "az_1_routes" {
-    subnet_id = aws_subnet.az_1.id
+resource "aws_route_table_association" "az_routes" {
+    count = 3
+    subnet_id = aws_subnet.az[count.index].id
     route_table_id = aws_route_table.az_routes.id
 }
-resource "aws_route_table_association" "az_2_routes" {
-    subnet_id = aws_subnet.az_2.id
-    route_table_id = aws_route_table.az_routes.id
-}
-resource "aws_route_table_association" "az_3_routes" {
-    subnet_id = aws_subnet.az_3.id
-    route_table_id = aws_route_table.az_routes.id
-}
-
 
 // Backend Zone routes via the App Zone peering
 resource "aws_route_table" "lz_routes" {
@@ -275,14 +207,7 @@ resource "aws_route_table" "lz_routes" {
 }
 
 resource "aws_route_table_association" "lz_1_routes" {
-    subnet_id = aws_subnet.lz_1.id
-    route_table_id = aws_route_table.lz_routes.id
-}
-resource "aws_route_table_association" "lz_2_routes" {
-    subnet_id = aws_subnet.lz_2.id
-    route_table_id = aws_route_table.lz_routes.id
-}
-resource "aws_route_table_association" "lz_3_routes" {
-    subnet_id = aws_subnet.lz_3.id
+    count = 3
+    subnet_id = aws_subnet.lz[count.index].id
     route_table_id = aws_route_table.lz_routes.id
 }

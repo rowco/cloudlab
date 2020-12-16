@@ -1,0 +1,10 @@
+#cloud-config
+
+${content}
+
+
+write_files:
+  ${ssh_key}
+  owner: ec2-user:ec2-user
+  path: /home/ec2-user/.ssh/id_rsa
+  permissions: '0400'
