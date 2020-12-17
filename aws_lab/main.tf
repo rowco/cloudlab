@@ -58,13 +58,33 @@ resource "aws_vpc" "bz_vpc" {
 // Subnet Provisioning
 // LZ
 resource "aws_subnet" "lz" {
-    count = 3
-    cidr_block = cidrsubnet(var.lz_vpc,3,count.index)
+    cidr_block = cidrsubnet(var.lz_vpc,3,0)
     vpc_id = aws_vpc.lz_vpc.id
     map_public_ip_on_launch = "true"
-    availability_zone = data.aws_availability_zones.available.names[count.index]
+    availability_zone = data.aws_availability_zones.available.names[0]
     tags = {
-      "Name" = "LZ-${count.index + 1}"
+      "Name" = "LZ"
+    }
+}
+// LZ PRIV
+resource "aws_subnet" "lz_priv" {
+    count = 2
+    cidr_block = cidrsubnet(var.lz_vpc,3,count.index + 1)
+    vpc_id = aws_vpc.lz_vpc.id
+    availability_zone = data.aws_availability_zones.available.names[count.index + 1]
+    tags = {
+      "Name" = "LZ-PRIV-${count.index + 1}"
+    }
+}
+// LZ PUB
+resource "aws_subnet" "lz_pub" {
+    count = 2
+    cidr_block = cidrsubnet(var.lz_vpc,3,count.index + 3)
+    vpc_id = aws_vpc.lz_vpc.id
+    map_public_ip_on_launch = "true"
+    availability_zone = data.aws_availability_zones.available.names[count.index + 1]
+    tags = {
+      "Name" = "LZ-PUB-${count.index + 1}"
     }
 }
 
@@ -101,13 +121,90 @@ resource "aws_internet_gateway" "lz_gateway" {
   vpc_id = aws_vpc.lz_vpc.id
 }
 
-resource "aws_internet_gateway" "az_gateway" {
-  vpc_id = aws_vpc.az_vpc.id
+# resource "aws_internet_gateway" "az_gateway" {
+#   vpc_id = aws_vpc.az_vpc.id
+# }
+
+# resource "aws_egress_only_internet_gateway" "bz_gateway" {
+#   vpc_id = aws_vpc.bz_vpc.id
+# }
+
+// Transit Gateways
+
+resource "aws_ec2_transit_gateway" "tgw" {
+  description = "Transit gateway for ${var.region}"
+  default_route_table_association = "disable"
+  default_route_table_propagation = "disable"
 }
 
-resource "aws_egress_only_internet_gateway" "bz_gateway" {
-  vpc_id = aws_vpc.bz_vpc.id
+# // Attach the transit gateway to the lz subnet
+# resource "aws_ec2_transit_gateway_vpc_attachment" "tgw_lz_admin" {
+
+#   subnet_ids         = [ aws_subnet.lz.id ]
+#   transit_gateway_id = aws_ec2_transit_gateway.tgw.id
+#   vpc_id             = aws_vpc.lz_vpc.id
+#   transit_gateway_default_route_table_association = "false"
+#   transit_gateway_default_route_table_propagation = "false"  
+
+# }
+
+
+// Attach the transit gateway to the lz_priv subnets
+resource "aws_ec2_transit_gateway_vpc_attachment" "tgw_lz" {
+
+  subnet_ids         = aws_subnet.lz_priv.*.id
+  transit_gateway_id = aws_ec2_transit_gateway.tgw.id
+  vpc_id             = aws_vpc.lz_vpc.id
+  transit_gateway_default_route_table_association = "false"
+  transit_gateway_default_route_table_propagation = "false"  
+
 }
+
+resource "aws_ec2_transit_gateway_vpc_attachment" "tgw_az" {
+
+  subnet_ids         = aws_subnet.az.*.id
+  transit_gateway_id = aws_ec2_transit_gateway.tgw.id
+  vpc_id             = aws_vpc.az_vpc.id
+  transit_gateway_default_route_table_association = "false"
+  transit_gateway_default_route_table_propagation = "false"  
+}
+
+resource "aws_ec2_transit_gateway_route_table" "tgw_rt_main" {
+  transit_gateway_id = aws_ec2_transit_gateway.tgw.id
+}
+
+resource "aws_ec2_transit_gateway_route_table_association" "tgw_rt_main_lz" {
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.tgw_lz.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt_main.id
+}
+
+resource "aws_ec2_transit_gateway_route_table_propagation" "tgw_rt_main_lz_prp" {
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.tgw_lz.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt_main.id
+}
+
+resource "aws_ec2_transit_gateway_route_table_association" "tgw_rt_main_az" {
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.tgw_az.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt_main.id
+}
+
+resource "aws_ec2_transit_gateway_route_table_propagation" "tgw_rt_main_az_prp" {
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.tgw_az.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt_main.id
+}
+
+resource "aws_ec2_transit_gateway_route" "tgw_rt_main_dfr" {
+  destination_cidr_block         = "0.0.0.0/0"
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.tgw_lz.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt_main.id
+}
+
+resource "aws_ec2_transit_gateway_route" "tgw_rt_main_prv" {
+  destination_cidr_block         = "10.0.0.0/8"
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.tgw_az.id
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt_main.id
+}
+
 
 // VPC peering
 
@@ -128,86 +225,19 @@ resource "aws_vpc_peering_connection" "az_bz" {
     }
 }
 
-resource "aws_vpc_peering_connection" "lz_az" {
-    peer_vpc_id = aws_vpc.lz_vpc.id
-    vpc_id      = aws_vpc.az_vpc.id
-    auto_accept = true
+# resource "aws_vpc_peering_connection" "lz_az" {
+#     peer_vpc_id = aws_vpc.lz_vpc.id
+#     vpc_id      = aws_vpc.az_vpc.id
+#     auto_accept = true
 
-    accepter {
-        allow_remote_vpc_dns_resolution = true
-    }
-    requester {
-        allow_remote_vpc_dns_resolution = true
-    }
+#     accepter {
+#         allow_remote_vpc_dns_resolution = true
+#     }
+#     requester {
+#         allow_remote_vpc_dns_resolution = true
+#     }
 
-    tags = {
-        Name = "Landing Zone to App Zone Peering"
-    }
-}
-
-// Routing
-
-// Backend Zone routes via the App Zone peering
-resource "aws_route_table" "bz_routes" {
-    vpc_id = aws_vpc.bz_vpc.id
-    route {
-        ipv6_cidr_block = "::/0"
-        egress_only_gateway_id = aws_egress_only_internet_gateway.bz_gateway.id
-    }
-    route {
-        cidr_block = var.az_vpc
-        vpc_peering_connection_id = aws_vpc_peering_connection.az_bz.id
-    }
-    route {
-        cidr_block = var.lz_vpc
-        vpc_peering_connection_id = aws_vpc_peering_connection.az_bz.id
-    }
-}
-
-resource "aws_route_table_association" "bz_routes" {
-    count = 3
-    subnet_id = aws_subnet.bz[count.index].id
-    route_table_id = aws_route_table.bz_routes.id
-}
-
-// App Zone sits between Landing zone and Backend zone
-resource "aws_route_table" "az_routes" {
-    vpc_id = aws_vpc.az_vpc.id
-    route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.az_gateway.id
-    }
-    route {
-        cidr_block = var.lz_vpc
-        vpc_peering_connection_id = aws_vpc_peering_connection.lz_az.id
-    }
-    route {
-        cidr_block = var.bz_vpc
-        vpc_peering_connection_id = aws_vpc_peering_connection.az_bz.id
-    }
-}
-
-resource "aws_route_table_association" "az_routes" {
-    count = 3
-    subnet_id = aws_subnet.az[count.index].id
-    route_table_id = aws_route_table.az_routes.id
-}
-
-// Backend Zone routes via the App Zone peering
-resource "aws_route_table" "lz_routes" {
-    vpc_id = aws_vpc.lz_vpc.id
-    route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.lz_gateway.id
-    }
-    route {
-        cidr_block = var.az_vpc
-        vpc_peering_connection_id = aws_vpc_peering_connection.lz_az.id
-    }
-}
-
-resource "aws_route_table_association" "lz_1_routes" {
-    count = 3
-    subnet_id = aws_subnet.lz[count.index].id
-    route_table_id = aws_route_table.lz_routes.id
-}
+#     tags = {
+#         Name = "Landing Zone to App Zone Peering"
+#     }
+# }
