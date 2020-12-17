@@ -30,5 +30,5 @@ output "ssh-admin" {
 }
 
 output "ssh-key" {
-  value = tls_private_key.deployer.public_key_openssh
+  value = tls_private_key.deployer.private_key_pem
 }
