@@ -1,3 +1,7 @@
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = var.public_key
+}
 
 # Application instances
 resource "aws_instance" "app" {
@@ -6,7 +10,7 @@ resource "aws_instance" "app" {
     instance_type = "t2.micro"
     subnet_id = aws_subnet.az[count.index].id
     vpc_security_group_ids = [aws_security_group.sg-app-default.id]
-    key_name = "tf_key"
+    key_name = "deployer-key"
     tags = {
         Name = "App ${count.index + 1}"
     }
@@ -22,7 +26,7 @@ resource "aws_instance" "backend" {
     instance_type = "t2.micro"
     subnet_id = aws_subnet.bz[count.index].id
     vpc_security_group_ids = [aws_security_group.sg-backend-default.id]
-    key_name = "tf_key"
+    key_name = "deployer-key"
     tags = {
         Name = "Backend ${count.index + 1}"
     }
@@ -63,7 +67,7 @@ resource "aws_instance" "nat" {
     instance_type = "t2.micro"
     subnet_id = aws_subnet.lz_pub[count.index].id
     vpc_security_group_ids = [aws_security_group.sg-landing-default.id]
-    key_name = "tf_key"
+    key_name = "deployer-key"
     tags = {
         Name = "NAT Node ${count.index + 1}"
     }
@@ -77,7 +81,7 @@ resource "aws_instance" "nat" {
             ]),
             write_files : concat([
                 {
-                content : file("./tf_key.pem"),
+                content : var.private_key_pem,
                 path : "/tmp/tf_key.pem",
                 permissions : "0400",
                 },
