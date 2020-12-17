@@ -19,3 +19,7 @@ variable "access_key" {}
 variable "secret_key" {}
 
 variable "region" {}
+
+variable "public_key" {}
+
+variable "private_key_pem" {}

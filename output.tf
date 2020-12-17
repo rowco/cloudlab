@@ -28,3 +28,7 @@ output "ssh-admin" {
     value       = format("ssh -i tf_key.pem ec2-user@%s",
     module.aws_lab.admin-dns )
 }
+
+output "ssh-key" {
+  value = tls_private_key.deployer.public_key_openssh
+}
