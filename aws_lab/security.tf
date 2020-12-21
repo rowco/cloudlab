@@ -2,34 +2,34 @@
 
 // Application
 resource "aws_security_group" "sg-app-default" {
-  name = "app-default"
+  name   = "app-default"
   vpc_id = aws_vpc.az_vpc.id
 
   ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["10.100.0.0/16"]
   }
 
   ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port = 8
-    to_port = 0
-    protocol = "icmp"
+    from_port   = 8
+    to_port     = 0
+    protocol    = "icmp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -37,41 +37,41 @@ resource "aws_security_group" "sg-app-default" {
 
 // Backend
 resource "aws_security_group" "sg-backend-default" {
-  name = "backend-default"
+  name   = "backend-default"
   vpc_id = aws_vpc.bz_vpc.id
 
   ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["10.100.0.0/16"]
   }
 
   ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   ingress {
-    from_port = 8
-    to_port = 0
-    protocol = "icmp"
+    from_port   = 8
+    to_port     = 0
+    protocol    = "icmp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
     ipv6_cidr_blocks = ["::/0"]
   }
 
@@ -80,34 +80,34 @@ resource "aws_security_group" "sg-backend-default" {
 
 // Landing
 resource "aws_security_group" "sg-landing-default" {
-  name = "landing-default"
+  name   = "landing-default"
   vpc_id = aws_vpc.lz_vpc.id
 
   ingress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["10.0.0.0/8"]
   }
 
   ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port = 8
-    to_port = 0
-    protocol = "icmp"
+    from_port   = 8
+    to_port     = 0
+    protocol    = "icmp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 

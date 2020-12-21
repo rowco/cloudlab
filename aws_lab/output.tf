@@ -5,18 +5,18 @@
 # }
 
 output "back-dns" {
-    description = "DNS name of BACK-1"
-    value       = aws_instance.backend.*.private_dns
+  description = "DNS name of BACK-1"
+  value       = aws_instance.backend.*.private_dns
 }
 
 output "app-dns" {
-    description = "DNS name of APP-1"
-    value       = aws_instance.app.*.private_dns
+  description = "DNS name of APP-1"
+  value       = aws_instance.app.*.private_dns
 }
 
 output "nat-dns" {
-    description = "DNS name of NAT host"
-    value       = aws_instance.nat.*.public_dns
+  description = "DNS name of NAT host"
+  value       = aws_instance.nat.*.public_dns
 }
 
 # output "admin-dns" {
