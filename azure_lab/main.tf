@@ -10,6 +10,7 @@ provider "azurerm" {
 resource "azurerm_resource_group" "rg" {
   name     = "cloudlab"
   location = var.region
+
 }
 
 resource "azurerm_virtual_network" "lz_vpc" {
@@ -40,6 +41,14 @@ resource "azurerm_subnet" "lz_pub" {
   address_prefixes     = [cidrsubnet(var.lz_vpc, 3, count.index)]
 }
 
+# resource "azurerm_subnet" "lz_bastion" {
+#   name                 = "AzureBastionSubnet"
+#   resource_group_name  = azurerm_resource_group.rg.name
+#   virtual_network_name = azurerm_virtual_network.lz_vpc.name
+#   address_prefixes     = [cidrsubnet(var.lz_vpc, 3, 2)]
+# }
+
+
 resource "azurerm_subnet" "lz_priv" {
   count                = 2
   name                 = "LZ-PRIV-${count.index + 1}"
@@ -54,4 +63,12 @@ resource "azurerm_subnet" "az" {
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.az_vpc.name
   address_prefixes     = [cidrsubnet(var.az_vpc, 3, count.index)]
+}
+
+resource "azurerm_subnet" "bz" {
+  count                = 3
+  name                 = "BZ-${count.index + 1}"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.bz_vpc.name
+  address_prefixes     = [cidrsubnet(var.bz_vpc, 3, count.index)]
 }

@@ -11,21 +11,21 @@ resource "local_file" "key" {
 
 
 
-# module "aws_lab" {
+module "aws_lab" {
 
-#     access_key = var.aws_access_key
-#     secret_key = var.aws_secret_key
-#     region     = "eu-west-2"
+    access_key = var.aws_access_key
+    secret_key = var.aws_secret_key
+    region     = "eu-west-2"
 
-#     public_key = tls_private_key.deployer.public_key_openssh
-#     private_key_pem = tls_private_key.deployer.private_key_pem
+    public_key = tls_private_key.deployer.public_key_openssh
+    private_key_pem = tls_private_key.deployer.private_key_pem
 
-#     source = "./aws_lab"
-#     lz_vpc = "10.100.0.0/21"
-#     az_vpc = "10.100.8.0/21"
-#     bz_vpc = "10.100.16.0/21"
+    source = "./aws_lab"
+    lz_vpc = "10.100.0.0/21"
+    az_vpc = "10.100.8.0/21"
+    bz_vpc = "10.100.16.0/21"
 
-# }
+}
 
 module "azure_lab" {
   source = "./azure_lab"

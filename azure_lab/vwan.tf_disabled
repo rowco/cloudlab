@@ -1,0 +1,62 @@
+// VWAN takes a long time 20+ minutes to build
+// As vnet peerings do not have the same limitations as AWS, VWAN is not required for this lab.
+
+
+resource "azurerm_virtual_wan" "vwan" {
+  name                = "base-vwan"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+}
+
+resource "azurerm_virtual_hub" "vhub" {
+  name                = "example-virtualhub"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  virtual_wan_id      = azurerm_virtual_wan.vwan.id
+  address_prefix      = "10.200.50.0/24"
+}
+
+resource "azurerm_virtual_hub_route_table" "vhub_rt" {
+  name           = "vhub_rt"
+  virtual_hub_id = azurerm_virtual_hub.vhub.id
+  labels         = ["label1"]
+}
+
+resource "azurerm_virtual_hub_connection" "vhub_az" {
+  name                      = "vhub_az"
+  virtual_hub_id            = azurerm_virtual_hub.vhub.id
+  remote_virtual_network_id = azurerm_virtual_network.az_vpc.id
+
+  routing {
+    associated_route_table_id = azurerm_virtual_hub_route_table.vhub_rt.id
+    #propagated_route_table = {
+    #    route_table_ids = [ azurerm_virtual_hub_route_table.vhub_rt.id ]
+    #}
+  }
+}
+
+resource "azurerm_virtual_hub_connection" "vhub_bz" {
+  name                      = "vhub_bz"
+  virtual_hub_id            = azurerm_virtual_hub.vhub.id
+  remote_virtual_network_id = azurerm_virtual_network.bz_vpc.id
+  routing {
+    associated_route_table_id = azurerm_virtual_hub_route_table.vhub_rt.id
+    #propagated_route_table = {
+    #    route_table_ids = [ azurerm_virtual_hub_route_table.vhub_rt.id ]
+    #}
+  }
+
+}
+
+resource "azurerm_virtual_hub_connection" "vhub_lz" {
+  name                      = "vhub_lz"
+  virtual_hub_id            = azurerm_virtual_hub.vhub.id
+  remote_virtual_network_id = azurerm_virtual_network.lz_vpc.id
+
+  routing {
+    associated_route_table_id = azurerm_virtual_hub_route_table.vhub_rt.id
+    #propagated_route_table = {
+    #    route_table_ids = [ azurerm_virtual_hub_route_table.vhub_rt.id ]
+    #}
+  }
+}
